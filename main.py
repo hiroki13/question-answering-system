@@ -12,6 +12,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-mode', default='xml', help='xml/train/test')
     parser.add_argument('-posts', help='path to posts')
+    parser.add_argument('--task', default='binary', help='binary/retrieval')
     parser.add_argument('--links', help='path to links')
     parser.add_argument('--check', default=False, help='check')
 
