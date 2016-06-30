@@ -3,6 +3,8 @@
 import sys
 import gzip
 from xml.etree import ElementTree
+import cPickle
+import random
 
 from qa import QA, Question, Answer
 
@@ -49,6 +51,39 @@ def save_binary(fn, data):
             gf.writelines(q_text)
 
 
+def save_negative(fn, data):
+    """
+    :param fn: string; file name
+    :param data: 1D: n_q; elem: xml_q
+    """
+    print 'Save %s' % fn
+
+    q1_index = range(len(data))
+    q2_index = range(len(data))
+    random.shuffle(q1_index)
+    random.shuffle(q2_index)
+
+    with gzip.open(fn + '.gz', 'wb') as gf:
+        for i in xrange(len(data)):
+            q1 = data[q1_index[i]]
+            q2 = data[q2_index[i]]
+
+            q_text = 'Q1\t%s\t%s\n' % (" ".join(q1.title), " ".join(q1.body))
+            q_text += 'Q2\t%s\t%s\n' % (" ".join(q2.title), " ".join(q2.body))
+            q_text += '\n'
+            gf.writelines(q_text)
+
+
+def dump_data(data, fn):
+    with gzip.open(fn + '.pkl.gz', 'wb') as gf:
+        cPickle.dump(data, gf, cPickle.HIGHEST_PROTOCOL)
+
+
+def load_data(fn):
+    with gzip.open(fn, 'rb') as gf:
+        return cPickle.load(gf)
+
+
 def separate_qa(posts):
     print '\nSEPARATE QA PAIRS'
     questions = []
@@ -56,20 +91,25 @@ def separate_qa(posts):
 
     root = posts.getroot()
 
+    max_post_id = -1
     for e in root:
         if e.attrib['PostTypeId'] == '1':
             questions.append(e)
+            post_id = int(e.attrib['Id'])
+            if max_post_id < post_id:
+                max_post_id = post_id
         else:
             answers.append(e)
 
     print 'Questions: %d\tAnswers: %d' % (len(questions), len(answers))
-    return questions, answers
+    return questions, answers, max_post_id
 
 
-def get_qa_pairs(questions, answers):
+def get_qa_pairs(questions, answers, max_post_id):
     print '\nGET QA PAIRS'
-    qa_pairs = []
 
+    print '\tCreating QA matrix...'
+    qa_matrix = [None for i in xrange(max_post_id + 1)]
     for i, q in enumerate(questions):
         if i > 0 and i % 1000 == 0:
             print i,
@@ -77,23 +117,31 @@ def get_qa_pairs(questions, answers):
 
         qa = QA()
         qa.questions.append(Question(q))
-        qid = qa.questions[0].id
+        qa_matrix[int(q.attrib['Id'])] = qa
 
-        for a in answers:
-            try:
-                if a.attrib['ParentId'] == qid:
+    print '\n\tMatching questions and answers...'
+    qa_matrix_len = len(qa_matrix)
+    for i, a in enumerate(answers):
+        if i > 0 and i % 1000 == 0:
+            print i,
+            sys.stdout.flush()
+
+        try:
+            parent_id = int(a.attrib['ParentId'])
+            if qa_matrix_len > parent_id:
+                qa = qa_matrix[parent_id]
+                if qa is not None:
                     qa.answers.append(Answer(a))
-            except:
-                continue
+        except:
+            continue
 
-        if len(qa.answers) > 0:
-            qa_pairs.append(qa)
+    count = 0
+    for qa in qa_matrix:
+        if qa is not None and len(qa.answers) > 0:
+            count += 1
 
-        if len(qa_pairs) == 1000:
-            break
-
-    print 'QA Pairs: %d' % len(qa_pairs)
-    return qa_pairs
+    print '\nQA Pairs: %d' % count
+    return qa_matrix
 
 
 def get_link_set(links, check=False):
@@ -180,21 +228,21 @@ def merge_linked_qa(qa_pairs, link_sets):
     return merged_qa_pairs
 
 
-def get_duplicate_qa_pairs(qa_pairs, duplicate_links):
+def get_duplicate_qa_pairs(qa_matrix, duplicate_links):
     duplicate_pairs = []
+    qa_matrix_len = len(qa_matrix)
 
     for link in duplicate_links:
-        duplicate_pair = []
+        post_id = int(link[0])
+        r_post_id = int(link[1])
 
-        for pair in qa_pairs:
-            q = pair.questions[0]
-
-            if q.id in link:
-                duplicate_pair.append(q)
-
-            if len(duplicate_pair) == 2:
-                duplicate_pairs.append(duplicate_pair)
-                break
+        if post_id < qa_matrix_len and r_post_id < qa_matrix_len:
+            qa1 = qa_matrix[post_id]
+            qa2 = qa_matrix[r_post_id]
+            if qa1 is not None and qa2 is not None:
+                q1 = qa1.questions[0]
+                q2 = qa2.questions[0]
+                duplicate_pairs.append((q1, q2))
 
     print 'Duplicate Question Pairs: %d' % len(duplicate_pairs)
     return duplicate_pairs
@@ -207,8 +255,8 @@ def create_qa_retrieval_dataset(argv):
     links = load(argv.links)
     link_set = get_link_set(links, argv.check)
 
-    q, a = separate_qa(posts)
-    qa_pairs = get_qa_pairs(q, a)
+    q, a, max_post_id = separate_qa(posts)
+    qa_pairs = get_qa_pairs(q, a, max_post_id)
     merged_qa_pairs = merge_linked_qa(qa_pairs, link_set)
 
     save(fn='test', data=merged_qa_pairs)
@@ -221,15 +269,26 @@ def create_seq_classification_dataset(argv):  # seq=semantically equivalent ques
     links = load(argv.links)
     duplicate_links = get_duplicate_links(links, argv.check)
 
-    q, a = separate_qa(posts)
-    qa_pairs = get_qa_pairs(q, a)
-    duplicate_qa_pairs = get_duplicate_qa_pairs(qa_pairs, duplicate_links)
+    q, a, max_post_id = separate_qa(posts)
+    qa_matrix = get_qa_pairs(q, a, max_post_id)
+    duplicate_qa_pairs = get_duplicate_qa_pairs(qa_matrix, duplicate_links)
 
     save_binary(fn='test', data=duplicate_qa_pairs)
+
+
+def create_seq_negative_samples(argv):
+    print '\nSEQ CLASSIFICATION NEGATIVE DATA CREATION START\n'
+
+    posts = load(argv.posts)
+    q, a, max_post_id = separate_qa(posts)
+    questions = [Question(u) for u in q]
+    save_negative(fn='negative', data=questions)
 
 
 def main(argv):
     if argv.task == 'binary':
         create_seq_classification_dataset(argv)
-    else:
+    elif argv.task == 'retrieval':
         create_qa_retrieval_dataset(argv)
+    else:
+        create_seq_negative_samples(argv)
