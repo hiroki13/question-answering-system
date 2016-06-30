@@ -35,7 +35,7 @@ def save(fn, data):
             gf.writelines(a_text)
 
 
-def save_binary(fn, data):
+def save_positive(fn, data):
     """
     :param fn: string; file name
     :param data: 1D: n_qa; elem: QA
@@ -262,8 +262,8 @@ def create_qa_retrieval_dataset(argv):
     save(fn='test', data=merged_qa_pairs)
 
 
-def create_seq_classification_dataset(argv):  # seq=semantically equivalent question
-    print '\nSEMANTICALLY EQUIVALENT QUESTION CLASSIFICATION DATA CREATION START\n'
+def create_seq_positive_samples(argv):  # seq=semantically equivalent question
+    print '\nSEMANTICALLY EQUIVALENT QUESTION POSITIVE DATA CREATION START\n'
 
     posts = load(argv.posts)
     links = load(argv.links)
@@ -273,11 +273,11 @@ def create_seq_classification_dataset(argv):  # seq=semantically equivalent ques
     qa_matrix = get_qa_pairs(q, a, max_post_id)
     duplicate_qa_pairs = get_duplicate_qa_pairs(qa_matrix, duplicate_links)
 
-    save_binary(fn='test', data=duplicate_qa_pairs)
+    save_positive(fn='positive', data=duplicate_qa_pairs)
 
 
 def create_seq_negative_samples(argv):
-    print '\nSEQ CLASSIFICATION NEGATIVE DATA CREATION START\n'
+    print '\nSEMANTICALLY EQUIVALENT QUESTION NEGATIVE DATA CREATION START\n'
 
     posts = load(argv.posts)
     q, a, max_post_id = separate_qa(posts)
@@ -286,9 +286,7 @@ def create_seq_negative_samples(argv):
 
 
 def main(argv):
-    if argv.task == 'binary':
-        create_seq_classification_dataset(argv)
-    elif argv.task == 'retrieval':
-        create_qa_retrieval_dataset(argv)
+    if argv.task == 'positive':
+        create_seq_positive_samples(argv)
     else:
         create_seq_negative_samples(argv)

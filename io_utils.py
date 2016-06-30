@@ -10,12 +10,13 @@ PAD = u'<PAD>'
 UNK = u'<UNK>'
 
 
-def load(path):
+def load(path, vocab_word=Vocab()):
     corpus = []
     word_freqs = defaultdict(int)
-    vocab_word = Vocab()
-    vocab_word.add_word(PAD)
-    vocab_word.add_word(UNK)
+
+    if vocab_word.size() == 0:
+        vocab_word.add_word(PAD)
+        vocab_word.add_word(UNK)
 
     with gzip.open(path) as f:
         sample = []
@@ -71,9 +72,17 @@ def save_sep(fn, data):
 
     with gzip.open(fn + '.gz', 'wb') as gf:
         for i, sample in enumerate(data):
+            if len(sample) != 2:
+                continue
+
+            flag = True
             q_text = 'Sample-%d\t%d\n' % (i+1, sample[0][1])
             for q in sample:
+                if len(q[0][0]) == 0 or len(q[0][1]) == 0 or len(q[0][2]) == 0:
+                    flag = False
+                    break
                 q_text += '%s\t%s\t%s\n' % (q[0][0], q[0][1], q[0][2])
             q_text += '\n'
-            gf.writelines(q_text)
 
+            if flag:
+                gf.writelines(q_text)

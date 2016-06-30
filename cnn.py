@@ -13,11 +13,9 @@ class Model(object):
         self.x = x  # 1D: batch_size * l * 2, 2D: window; elem=word_id
         self.y = y  # 1D: batch_size; elem=label
         self.l = l  # scalar: elem=sentence length
-        self.j = y.shape
 
         batch_size = y.shape[0]
         self.zero = T.zeros((1, 1, dim_emb * window), dtype=theano.config.floatX)
-#        zero = T.cast(0, dtype='int32')
 
         self.pad = build_shared_zeros((1, dim_emb))
         if init_emb is None:
@@ -31,15 +29,10 @@ class Model(object):
         self.params = [self.emb, self.W_in, self.W_out, self.W_h]
 
         e = self.E[x]  # e: 1D: batch_size * n_words * 2, 2D: window, 3D: dim_emb
-#        x_in = e.reshape((e.shape[0], -1))
         x_in = e.reshape((batch_size * 2, l, -1))
 
-#        [h, _], _ = theano.scan(fn=convolution, sequences=l, outputs_info=[None, zero], non_sequences=[x_in, self.W_in])
-#        h = T.max(self.zero_pad_filtering_gate(x_in, dim_emb, window) * sigmoid(T.dot(x_in, self.W_in)), 1)
-        h1 = T.max(self.zero_pad_filtering_gate(x_in, dim_emb, window) * relu(T.dot(x_in, self.W_in)), 1)
-        h = T.dot(h1, self.W_h)
-#        h = T.max(self.zero_pad_filtering_gate(x_in, dim_emb, window) * T.dot(x_in, self.W_in), 1)
-#        h = T.max(T.dot(x_in, self.W_in), 1)
+        z = T.max(self.zero_pad_filtering_gate(x_in, dim_emb, window) * relu(T.dot(x_in, self.W_in)), 1)
+        h = activation(T.dot(z, self.W_h))
         h_1 = h[T.arange(batch_size) * 2]
         h_2 = h[T.arange(1, batch_size + 1) * 2 - 1]
         self.p_y = sigmoid(T.batched_dot(T.dot(h_1, self.W_out), h_2))

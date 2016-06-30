@@ -114,3 +114,16 @@ def padding(matrix, max_length, window=5):
 
     assert len(padded_matrix) % max_length == 0
     return padded_matrix
+
+
+def separate_datasets(samples):
+    n_samples = len(samples)
+    sep = n_samples / 10
+    train_data = samples[: sep * 8]
+    dev_data = samples[sep * 8: sep * 8 + sep / 2]
+    test_data = samples[sep * 8 + sep / 2:]
+
+    print 'TRAIN DATA: %d\tDEV DATA: %d\tTEST DATA: %d' % (len(train_data), len(dev_data), len(test_data))
+    return train_data, dev_data, test_data
+
+

@@ -51,3 +51,28 @@ def set_train_f(model, tr_dataset):
                               }
                               )
     return train_f
+
+
+def set_predict_f(model, te_dataset):
+    # dataset = [tr_x, tr_y, tr_l]
+    # tr_x=features: 1D: n_samples * n_words, 2D: window; elem=word id
+    # tr_y=labels: 1D: n_samples; elem=scalar
+    # tr_l=question length: 1D: n_samples * 2; elem=scalar
+    # bb_x=batch indices for x: 1D: n_samples / batch_size + 1; elem=(bob, eob)
+    # bb_y=batch indices for y: 1D: n_samples / batch_size + 1; elem=(bob, eob)
+
+    index = T.iscalar('index')
+    bob_x = T.iscalar('bob_x')
+    eob_x = T.iscalar('eob_x')
+    bob_y = T.iscalar('bob_y')
+    eob_y = T.iscalar('eob_y')
+
+    predict_f = theano.function(inputs=[index, bob_x, eob_x, bob_y, eob_y],
+                                outputs=model.correct,
+                                givens={
+                                model.pr_inputs[0]: te_dataset[0][bob_x: eob_x],
+                                model.pr_inputs[1]: te_dataset[1][bob_y: eob_y],
+                                model.pr_inputs[2]: te_dataset[2][index],
+                                }
+                                )
+    return predict_f

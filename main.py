@@ -13,13 +13,17 @@ if __name__ == '__main__':
     parser.add_argument('-mode', default='xml', help='xml/train/test')
     parser.add_argument('-posts', help='path to posts')
     parser.add_argument('--task', default='binary', help='binary/retrieval')
+    parser.add_argument('--data_type', default='positive', help='positive/negative')
     parser.add_argument('--links', help='path to links')
     parser.add_argument('--check', default=False, help='check')
+    parser.add_argument('--data_size', type=int, default=1000000, help='data size')
 
     parser.add_argument('--p_data', help='path to data')
     parser.add_argument('--n_data', help='path to data')
 
-    parser.add_argument('--train_data', help='path to data')
+    parser.add_argument('--train_data', default=None, help='path to data')
+    parser.add_argument('--dev_data', default=None, help='path to data')
+    parser.add_argument('--test_data', default=None, help='path to data')
 
     """ Neural Architectures """
     parser.add_argument('--dim_emb',    type=int, default=50, help='dimension of embeddings')
@@ -31,7 +35,7 @@ if __name__ == '__main__':
     """ Training Parameters """
     parser.add_argument('--batch_size', type=int, default=8, help='mini batch size')
     parser.add_argument('--opt', default='sgd', help='optimization method')
-    parser.add_argument('--epoch', type=int, default=100, help='number of epochs to train')
+    parser.add_argument('--epoch', type=int, default=30, help='number of epochs to train')
     parser.add_argument('--lr', type=float, default=0.0075, help='learning rate')
     parser.add_argument('--reg', type=float, default=0.0001, help='learning rate')
     parser.add_argument('--init_emb', default=None, help='Initial embedding to be loaded')

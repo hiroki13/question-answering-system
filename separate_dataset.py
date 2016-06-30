@@ -1,5 +1,7 @@
-from io_utils import load_sep, save_sep
 import random
+
+from preprocessor import separate_datasets
+from io_utils import load_sep, save_sep
 
 
 def separate_data(argv):
@@ -20,7 +22,12 @@ def separate_data(argv):
     random.shuffle(indices)
 
     randomized_dataset = [dataset[i] for i in indices]
-    save_sep('dataset', randomized_dataset)
+
+    train_dataset, dev_dataset, test_dataset = separate_datasets(randomized_dataset)
+
+    save_sep('train', train_dataset)
+    save_sep('dev', dev_dataset)
+    save_sep('test', test_dataset)
 
 
 def main(argv):
