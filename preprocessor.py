@@ -17,15 +17,14 @@ def sample_format(corpus, vocab, window=5):
     :return:
     """
 
-    samples = []
+    phi_samples = []
     for sample in corpus:
-        q1 = convert_into_ids(sample[0][0][1], vocab)
-        q2 = convert_into_ids(sample[0][1][1], vocab)
-
-        q1_phi = extract_features(q1, window)
-        q2_phi = extract_features(q2, window)
-        samples.append(([q1_phi, q2_phi], sample[1]))
-    return samples
+        phi_sample = []
+        for question in sample[0]:
+            q = convert_into_ids(question[1], vocab)
+            phi_sample.append(extract_features(q, window))
+        phi_samples.append((phi_sample, sample[1]))
+    return phi_samples
 
 
 def convert_into_ids(sent, vocab):
@@ -34,7 +33,7 @@ def convert_into_ids(sent, vocab):
         if w in vocab.w2i:
             w_ids.append(vocab.get_id(w))
         else:
-            w_ids.append(vocab[UNK])
+            w_ids.append(vocab.get_id(UNK))
     return w_ids
 
 
@@ -66,22 +65,13 @@ def theano_format(samples, batch_size):
     tmp_matrix = []
 
     for i, sample in enumerate(samples):
-        q1 = sample[0][0]
-        q2 = sample[0][1]
-        tmp_matrix.append(q1)
-        tmp_matrix.append(q2)
+        for q in sample[0]:
+            tmp_matrix.append(q)
+            if max_length < len(q):
+                max_length = len(q)
 
         labels.append(sample[1])
-
-        q1_len = len(q1)
-        q2_len = len(q2)
-
         eob_y = i + 1
-
-        if max_length < q1_len:
-            max_length = q1_len
-        if max_length < q2_len:
-            max_length = q2_len
 
         if (i + 1) % batch_size == 0:
             batch_boundary_for_y.append((bob_y, eob_y))
@@ -114,16 +104,4 @@ def padding(matrix, max_length, window=5):
 
     assert len(padded_matrix) % max_length == 0
     return padded_matrix
-
-
-def separate_datasets(samples):
-    n_samples = len(samples)
-    sep = n_samples / 10
-    train_data = samples[: sep * 8]
-    dev_data = samples[sep * 8: sep * 8 + sep / 2]
-    test_data = samples[sep * 8 + sep / 2:]
-
-    print 'TRAIN DATA: %d\tDEV DATA: %d\tTEST DATA: %d' % (len(train_data), len(dev_data), len(test_data))
-    return train_data, dev_data, test_data
-
 

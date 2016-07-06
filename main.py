@@ -10,13 +10,14 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Question Answering System')
 
-    parser.add_argument('-mode', default='xml', help='xml/train/test')
+    parser.add_argument('-mode', default='train', help='data/train/test')
     parser.add_argument('-posts', help='path to posts')
-    parser.add_argument('--task', default='binary', help='binary/retrieval')
+    parser.add_argument('--task', default='binary', help='data/binary/ranking/retrieval')
     parser.add_argument('--data_type', default='positive', help='positive/negative')
     parser.add_argument('--links', help='path to links')
     parser.add_argument('--check', default=False, help='check')
     parser.add_argument('--data_size', type=int, default=1000000, help='data size')
+    parser.add_argument('--n_cands', type=int, default=2, help='num of negative candidates')
 
     parser.add_argument('--p_data', help='path to data')
     parser.add_argument('--n_data', help='path to data')
@@ -30,24 +31,36 @@ if __name__ == '__main__':
     parser.add_argument('--dim_hidden', type=int, default=50, help='dimension of hidden layer')
     parser.add_argument('--unit', default='gru', help='unit')
     parser.add_argument('--window', type=int, default=5, help='window size for convolution')
+    parser.add_argument('--layer',  type=int, default=1,         help='number of layers')
+    parser.add_argument('--sim',  default='linear',         help='number of layers')
     parser.add_argument('--activation', default='tanh', help='activation')
 
     """ Training Parameters """
+    parser.add_argument('--save', type=bool, default=False, help='save model files')
+    parser.add_argument('--load_vocab', type=str, default=None, help='save model files')
+    parser.add_argument('--load_model', type=str, default=None, help='save model files')
     parser.add_argument('--batch_size', type=int, default=8, help='mini batch size')
-    parser.add_argument('--opt', default='sgd', help='optimization method')
+    parser.add_argument('--opt', default='adam', help='optimization method')
     parser.add_argument('--epoch', type=int, default=30, help='number of epochs to train')
     parser.add_argument('--lr', type=float, default=0.0075, help='learning rate')
-    parser.add_argument('--reg', type=float, default=0.0001, help='learning rate')
+    parser.add_argument('--reg', type=float, default=0.0005, help='learning rate')
     parser.add_argument('--init_emb', default=None, help='Initial embedding to be loaded')
 
     """ Starting a mode """
     argv = parser.parse_args()
-    if argv.mode == 'xml':
-        import xml_parser
-        xml_parser.main(argv)
+    if argv.mode == 'data':
+        if argv.task == 'data':
+            import data_generator
+            data_generator.main(argv)
+        elif argv.task == 'binary':
+            import binary_dataset_generator
+            binary_dataset_generator.main(argv)
+        elif argv.task == 'ranking':
+            import ranking_dataset_generator
+            ranking_dataset_generator.main(argv)
     elif argv.mode == 'train':
         import train
         train.main(argv)
-    elif argv.mode == 'sep':
-        import separate_dataset
-        separate_dataset.main(argv)
+    elif argv.mode == 'test':
+        import test
+        test.main(argv)

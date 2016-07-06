@@ -35,6 +35,8 @@ def train(argv):
         corpus_statistics(test_corpus)
 
     print '\nVocab: %d' % vocab_word.size()
+    if argv.save:
+        io_utils.dump_data(vocab_word, 'Vocab.size-%d' % vocab_word.size())
 
     ##############
     # PREPROCESS #
@@ -122,6 +124,10 @@ def train(argv):
             if best_dev_acc < dev_acc:
                 best_dev_acc = dev_acc
                 update = True
+                if argv.save:
+                    fn = 'Model.Layer-%d.Sim-%s.Act-%s.Opt-%s.Batch-%d.reg-%f' %\
+                         (argv.layer, argv.sim, argv.activation, argv.opt, argv.batch_size, argv.reg)
+                    io_utils.dump_data(model, fn)
 
         if argv.test_data:
             print '\n\tTEST\n\t',
@@ -149,7 +155,6 @@ def predict(f, bb_x, bb_y, n_samples):
     acc = ttl_crr/n_samples
     print '\n\tTime: %f' % (end - start)
     print '\tACC: %f  CRR: %d   TOTAL: %d' % (acc, ttl_crr, n_samples)
-
     return acc
 
 

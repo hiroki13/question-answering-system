@@ -37,10 +37,3 @@ def build_shared_zeros(shape):
         borrow=True
     )
 
-
-def build_shared_pad(shape):
-    pad = [[-100. for i in xrange(shape[1])] for j in xrange(shape[0])]
-    return theano.shared(
-        value=np.asarray(pad, dtype=theano.config.floatX),
-        borrow=True
-    )

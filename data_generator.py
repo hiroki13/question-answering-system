@@ -51,25 +51,27 @@ def save_positive(fn, data):
             gf.writelines(q_text)
 
 
-def save_negative(fn, data):
+def save_negative(fn, data, n_cands=2):
     """
     :param fn: string; file name
     :param data: 1D: n_q; elem: xml_q
     """
     print 'Save %s' % fn
 
-    q1_index = range(len(data))
-    q2_index = range(len(data))
-    random.shuffle(q1_index)
-    random.shuffle(q2_index)
-
+    index = 0
+    n_data = len(data)
+    q_index = range(n_data)
+    random.shuffle(q_index)
     with gzip.open(fn + '.gz', 'wb') as gf:
-        for i in xrange(len(data)):
-            q1 = data[q1_index[i]]
-            q2 = data[q2_index[i]]
-
-            q_text = 'Q1\t%s\t%s\n' % (" ".join(q1.title), " ".join(q1.body))
-            q_text += 'Q2\t%s\t%s\n' % (" ".join(q2.title), " ".join(q2.body))
+        for i in xrange(n_data):
+            q_text = ''
+            for n in xrange(n_cands):
+                if index >= n_data:
+                    random.shuffle(q_index)
+                    index = 0
+                q = data[q_index[index]]
+                q_text += 'Q%d\t%s\t%s\n' % (n+1, " ".join(q.title), " ".join(q.body))
+                index += 1
             q_text += '\n'
             gf.writelines(q_text)
 
@@ -282,11 +284,11 @@ def create_seq_negative_samples(argv):
     posts = load(argv.posts)
     q, a, max_post_id = separate_qa(posts)
     questions = [Question(u) for u in q]
-    save_negative(fn='negative', data=questions)
+    save_negative(fn='negative.cands-%d' % argv.n_cands, data=questions, n_cands=argv.n_cands)
 
 
 def main(argv):
-    if argv.task == 'positive':
+    if argv.data_type == 'positive':
         create_seq_positive_samples(argv)
     else:
         create_seq_negative_samples(argv)
