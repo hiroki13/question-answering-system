@@ -1,5 +1,6 @@
 import sys
 import time
+import math
 import numpy as np
 
 import io_utils
@@ -8,11 +9,13 @@ from model_builder import set_model, set_train_f, set_predict_f
 
 
 def train(argv):
-    print 'SETTING UP A TRAINING SETTING'
+    print '\nSETTING UP A TRAINING SETTING\n'
 
     emb = None
     batch_size = argv.batch_size
     window = argv.window
+
+    print 'SETTING: Batch: %d  Window: %d  Learning Rate: %f' % (batch_size, window, argv.lr)
 
     ##############
     # LOAD FILES #
@@ -21,17 +24,17 @@ def train(argv):
     """ Load files """
     # corpus: 1D: n_sents, 2D: n_words, 3D: (word, pas_info, pas_id)
     tr_corpus, vocab_word = io_utils.load(argv.train_data)
-    print 'TRAIN CORPUS'
+    print '\nTRAIN CORPUS'
     corpus_statistics(tr_corpus)
 
     if argv.dev_data:
         dev_corpus, vocab_word = io_utils.load(argv.dev_data, vocab_word)
-        print 'DEV CORPUS'
+        print '\nDEV CORPUS'
         corpus_statistics(dev_corpus)
 
     if argv.test_data:
         test_corpus, vocab_word = io_utils.load(argv.test_data, vocab_word)
-        print 'TEST CORPUS'
+        print '\nTEST CORPUS'
         corpus_statistics(test_corpus)
 
     print '\nVocab: %d' % vocab_word.size()
@@ -110,6 +113,9 @@ def train(argv):
             bb_x_i = tr_bb_x[b_index]
             bb_y_i = tr_bb_y[b_index]
             crr, nll = train_f(index=b_index, bob_x=bb_x_i[0], eob_x=bb_x_i[1], bob_y=bb_y_i[0], eob_y=bb_y_i[1])
+
+            assert not math.isnan(nll), '\nNLL is nan: %d\n' % i
+
             ttl_crr += np.sum(crr)
             ttl_nll += nll
 

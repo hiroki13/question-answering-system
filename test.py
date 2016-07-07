@@ -26,12 +26,12 @@ def test(argv):
 
     if argv.dev_data:
         dev_corpus, _ = io_utils.load(argv.dev_data, vocab_word, False)
-        print 'DEV CORPUS'
+        print '\nDEV CORPUS'
         corpus_statistics(dev_corpus)
 
     if argv.test_data:
         test_corpus, _ = io_utils.load(argv.test_data, vocab_word, False)
-        print 'TEST CORPUS'
+        print '\nTEST CORPUS'
         corpus_statistics(test_corpus)
 
     print '\nVocab: %d' % vocab_word.size()

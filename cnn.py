@@ -1,4 +1,4 @@
-from utils import sample_weights, tanh, relu
+from utils import sample_weights, sigmoid, tanh, relu
 
 import theano
 import theano.tensor as T
@@ -15,6 +15,7 @@ def layers(x, window, dim_emb, dim_hidden, n_layers, activation=tanh):
         if i == 0:
             W = theano.shared(sample_weights(dim_emb * window, dim_hidden))
             h = T.max(zero_pad_gate(x) * relu(T.dot(x, W)), 1)
+#            h = T.max(T.dot(x, W), 1)
         else:
             W = theano.shared(sample_weights(dim_hidden, dim_hidden))
             h = activation(T.dot(h, W))

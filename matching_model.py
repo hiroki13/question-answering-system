@@ -8,7 +8,7 @@ import theano.tensor as T
 
 class Model(object):
     def __init__(self, x, y, l, window, opt, lr, init_emb, dim_emb, dim_hidden, n_vocab, L2_reg, unit,
-                 sim='cos', n_layers=2, activation=tanh):
+                 sim='cos', n_layers=1, activation=tanh):
         self.tr_inputs = [x, y, l]
         self.pr_inputs = [x, y, l]
 
@@ -61,7 +61,7 @@ class Model(object):
         elif opt == 'ada_delta':
             self.update = ada_delta(cost=self.cost, params=self.params)
         elif opt == 'adam':
-            self.update = adam(cost=self.cost, params=self.params)
+            self.update = adam(cost=self.cost, params=self.params, lr=lr)
         else:
             self.update = sgd(cost=self.cost, params=self.params, lr=lr)
 
