@@ -4,7 +4,7 @@ import numpy as np
 
 import io_utils
 from preprocessor import corpus_statistics, sample_format, theano_format
-from model_builder import set_predict_f, set_rank_f
+from model_builder import set_predict_f
 
 
 def test(argv):
@@ -72,15 +72,9 @@ def test(argv):
     model = io_utils.load_data(argv.load_model)
 
     if argv.dev_data:
-        if task == 'binary':
-            dev_f = set_predict_f(model, dev_dataset)
-        elif task == 'ranking':
-            dev_f = set_rank_f(model, dev_dataset)
+        dev_f = set_predict_f(model, dev_dataset)
     if argv.test_data:
-        if task == 'binary':
-            test_f = set_predict_f(model, te_dataset)
-        elif task == 'ranking':
-            test_f = set_rank_f(model, te_dataset)
+        test_f = set_predict_f(model, te_dataset)
 
     ########
     # TEST #

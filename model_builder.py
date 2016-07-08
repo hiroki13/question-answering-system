@@ -2,6 +2,7 @@ import theano
 import theano.tensor as T
 
 import matching_model
+import ranking_model
 from utils import relu, tanh
 
 
@@ -24,10 +25,16 @@ def set_model(argv, emb, vocab):
     sim = argv.sim
     activation = relu if argv.activation == 'relu' else tanh
 
-    model = matching_model.Model(x=x, y=y, l=l, window=window, opt=opt, lr=lr,
-                                 init_emb=init_emb, dim_emb=dim_emb, dim_hidden=dim_hidden,
-                                 n_vocab=n_vocab, L2_reg=L2_reg, unit=unit, sim=sim,
-                                 n_layers=n_layers, activation=activation)
+    if argv.task == 'binary':
+        model = matching_model.Model(x=x, y=y, l=l, window=window, opt=opt, lr=lr,
+                                     init_emb=init_emb, dim_emb=dim_emb, dim_hidden=dim_hidden,
+                                     n_vocab=n_vocab, L2_reg=L2_reg, unit=unit, sim=sim,
+                                     n_layers=n_layers, activation=activation)
+    else:
+        model = ranking_model.Model(x=x, y=y, l=l, window=window, opt=opt, lr=lr,
+                                    init_emb=init_emb, dim_emb=dim_emb, dim_hidden=dim_hidden,
+                                    n_vocab=n_vocab, L2_reg=L2_reg, unit=unit, sim=sim,
+                                    n_layers=n_layers, activation=activation)
     return model
 
 
@@ -80,29 +87,3 @@ def set_predict_f(model, dataset):
                                 }
                                 )
     return predict_f
-
-
-def set_rank_f(model, dataset):
-    # dataset = [x, y, l]
-    # x=features: 1D: n_samples * n_words, 2D: window; elem=word id
-    # y=labels: 1D: n_samples; elem=scalar
-    # l=question length: 1D: n_samples * 2; elem=scalar
-    # bb_x=batch indices for x: 1D: n_samples / batch_size + 1; elem=(bob, eob)
-    # bb_y=batch indices for y: 1D: n_samples / batch_size + 1; elem=(bob, eob)
-
-    index = T.iscalar('index')
-    bob_x = T.iscalar('bob_x')
-    eob_x = T.iscalar('eob_x')
-    bob_y = T.iscalar('bob_y')
-    eob_y = T.iscalar('eob_y')
-
-    predict_f = theano.function(inputs=[index, bob_x, eob_x, bob_y, eob_y],
-                                outputs=model.correct_r,
-                                givens={
-                                model.pr_inputs[0]: dataset[0][bob_x: eob_x],
-                                model.pr_inputs[1]: dataset[1][bob_y: eob_y],
-                                model.pr_inputs[2]: dataset[2][index],
-                                }
-                                )
-    return predict_f
-

@@ -38,18 +38,17 @@ class Model(object):
         self.params.extend(params)
 
         """ Output Layer """
-        h_1 = h[T.arange(batch_size) * 2]
-        h_2 = h[T.arange(1, batch_size + 1) * 2 - 1]
+        h = h.reshape((batch_size, n_cands, -1))
+        h_1 = h[T.arange(batch_size), 0]
+        h_2 = h[T.arange(batch_size), 1:]
         if sim == 'cos':
             y_score = cosign_similarity(h_1, h_2)
         else:
-            y_score = sigmoid(T.batched_dot(T.dot(h_1, self.W_out), h_2))
+            y_score = T.batched_dot(T.dot(h_1, self.W_out), h_2.dimshuffle(0, 2, 1))
+        y_score_hat = T.max(y_score, 1)
 
         """ Objective Function """
-        if sim == 'cos':
-            self.nll = mean_squared_loss(y_score, y)
-        else:
-            self.nll = binary_crass_entropy(y_score, y)
+        self.nll = max_margin_loss(y_score_hat, y_score[T.arange(batch_size), y])
         self.L2_sqr = regularization(self.params)
         self.cost = self.nll + L2_reg * self.L2_sqr / 2.
 
@@ -64,10 +63,10 @@ class Model(object):
             self.update = sgd(cost=self.cost, params=self.params, lr=lr)
 
         """ Predicts """
-        y_binary = T.switch(y_score > 0.5, 1, 0)  # 1D: batch
+        y_hat = T.argmax(y_score, 1)
 
         """ Check Accuracies """
-        self.correct = T.eq(y_binary, y)
+        self.correct = T.eq(y_hat, y)
 
 
 def cosign_similarity(x, y):
@@ -80,6 +79,10 @@ def binary_crass_entropy(p_y, y):
 
 def mean_squared_loss(p_y, y):
     return T.sum((y - p_y) ** 2 / 2)
+
+
+def max_margin_loss(p_y_hat, p_y):
+    return T.sum(T.maximum(0.1 - p_y + p_y_hat, 0.))
 
 
 def regularization(params):
