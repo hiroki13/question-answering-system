@@ -58,9 +58,18 @@ if __name__ == '__main__':
         elif argv.task == 'ranking':
             import ranking_dataset_generator
             ranking_dataset_generator.main(argv)
+        elif argv.task == 'match':
+            import similar_question_generator
+            similar_question_generator.main(argv)
+        elif argv.task == 'tokenize':
+            import tokenizer
+            tokenizer.main(argv)
     elif argv.mode == 'train':
         import train
         train.main(argv)
     elif argv.mode == 'test':
         import test
         test.main(argv)
+    elif argv.mode == 'tfidf':
+        import tfidf
+        tfidf.main(argv)

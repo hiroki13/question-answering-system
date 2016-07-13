@@ -2,8 +2,10 @@
 
 from __future__ import print_function
 import re
+import gzip
 import HTMLParser
 
+regexp = re.compile(r'^[\x20-\x7E]+$')
 html_tags = re.compile(r'<[^>]*?>')
 
 
@@ -282,3 +284,31 @@ def tokenizeRawTweetText(text):
 def remove_html_tags(text):
     return html_tags.sub('', text)
 
+
+def load(fn):
+    samples = []
+    fopen = gzip.open if fn.endswith('.gz') else open
+    with fopen(fn, 'rb') as gf:
+        # line: [time, speaker_id, utterance]
+        for line in gf:
+            line = line.rstrip()
+            if line.startswith('[') and regexp.search(line) is not None:
+                line = line.split()
+                text = ' '.join(line[2:])
+                samples.append((line[0], line[1], tokenize(text)))
+    return samples
+
+
+def save(fn, data):
+    print('Save %s' % fn)
+    with open(fn + '_tokenized.txt', 'wb') as gf:
+        for line in data:
+            text = line[0] + '\t' + line[1] + '\t' + ' '.join(line[2]) + '\n'
+            gf.writelines(text)
+
+
+def main(argv):
+    fn = argv.train_data
+    data = load(fn)
+    fn = fn.split('/')
+    save(fn[-1][:-4], data)
